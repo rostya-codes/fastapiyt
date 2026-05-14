@@ -1,77 +1,48 @@
-import uvicorn
-from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, EmailStr, ConfigDict
+from fastapi import FastAPI
+
 
 app = FastAPI()
 
-books = [
-    {
-        'id': 1,
-        'title': 'Clean Code',
-        'author': 'Robert C. Martin',
-    },
-    {
-        'id': 2,
-        'title': 'The Pragmatic Programmer',
-        'author': 'Andrew Hunt',
-    },
-    {
-        'id': 3,
-        'title': 'Python Crash Course',
-        'author': 'Eric Matthes',
-    },
-    {
-        'id': 4,
-        'title': 'Two Scoops of Django',
-        'author': 'Daniel Roy Greenfeld',
-    },
-    {
-        'id': 5,
-        'title': 'Fluent Python',
-        'author': 'Luciano Ramalho',
-    },
-]
+data = {
+    'email': 'abc@mail.com',
+    'bio': 'desc',
+    'age': 12,
+}
+
+data_wo_age = {
+    'email': 'abc@mail.com',
+    'bio': 'desc',
+    # 'gender': 'male',
+    # 'born': '2022'
+}
 
 
-@app.get(
-    '/books',
-    tags=['Книги'],
-    summary='Получить все книги',
-)
-def read_books():
-    return books
+class UserSchema(BaseModel):
+    email: EmailStr
+    bio: str | None = Field(max_length=1000)
+
+    model_config = ConfigDict(extra='forbid')
 
 
-@app.get(
-    '/books/{book_id}',
-    tags=['Книги'],
-    summary='Получить конкретную книгу',
-)
-def get_books(book_id: int):
-    for book in books:
-        if book['id'] == book_id:
-            return book
-        else:
-            raise HTTPException(status_code=404, detail='Книга не найдена')
+users = []
 
 
-class NewBook(BaseModel):
-    title: str
-    author: str
+@app.post('/users')
+def add_user(user: UserSchema):
+    users.append(user)
+    return {'ok': True, 'msg': 'user added'}
 
 
-@app.post(
-    '/books',
-    tags=['Книги'],
-)
-def create_book(new_book: NewBook):
-    books.append({
-        'id': len(books) + 1,
-        'title': new_book.title,
-        'author': new_book.author,
-    })
-    return {'success': True, 'message': 'Книга успешно добавлена'}
+@app.get('/users')
+def get_users() -> list[UserSchema]:
+    return users
 
 
-if __name__ == '__main__':
-    uvicorn.run('main:app', reload=True)
+# class UserAgeSchema(UserSchema):
+#     age: int = Field(ge=0, le=130)
+
+
+# user = (UserSchema(**data))
+# print(user)
+#
